@@ -1,0 +1,16 @@
+<h1>Accueil</h1>
+<form action="/getusage" method="post" name="" accept-charset="utf-8">
+	Choisissez votre forfait :<br/>
+	<select name="forfait">
+	<% forfaits.each do |key,forfait| %>
+		<option value="<%= key %>"><%= forfait['name'] %></option>
+	<% end %>
+	</select>
+	<br/>
+	<label for="userid">Userid</label><br/>
+	<input type="text" name="userid" value="" id="userid"/>
+	
+
+	<p><input type="submit" value="Aller"/></p>
+</form>
+
