@@ -2,6 +2,8 @@ require 'rubygems'
 require 'sinatra'
 require 'hpricot'
 require 'open-uri' # to open the url of the videotron page
+require 'openssl'
+OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 get '/' do
 
