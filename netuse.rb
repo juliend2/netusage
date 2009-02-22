@@ -3,10 +3,22 @@ require 'sinatra'
 require 'hpricot'
 require 'open-uri' # to open the url of the videotron page
 require 'openssl'
+# auth-specific :
+require 'dm-core'
+require 'dm-timestamps'
+require 'dm-validations'
+require Pathname(__FILE__).dirname.expand_path + "models/user"
+
+DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/test.db")
+DataMapper.auto_upgrade!
+
+use Rack::Session::Cookie, :secret => 'A1 sauce 1s so good you should use 1t on a11 yr st34ksssss'
+# /auth-specific
+
+# because we crawl a https page :
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 get '/' do
-
   erb :index, :locals => { :forfaits => $hashforfaits }
 end
 
@@ -31,6 +43,95 @@ post '/getusage' do
   erb :result, :locals => {:download => recu_go.inner_html, :forfait => $hashforfaits[params[:forfait]]['name'], :maxaval =>$hashforfaits[params[:forfait]]['aval']}
 end
 
+
+# Auth actions :
+get '/logged_in' do
+  if session[:user]
+    "true"
+  else
+    "false"
+  end
+end
+
+get '/profile' do
+  if session[:user]
+    @user = User.first(:id=>session[:user])
+    @videotron = @user.videotron
+    @email = @user.email
+    erb :profile, :locals => {:id=>@user.id, :videotron => @videotron, :email => @email}
+  else
+    'You need to log in to see your profile.'
+  end
+end
+
+get '/login' do
+  erb :login
+end
+
+post '/login' do
+    if user = User.authenticate(params[:email], params[:password])
+      session[:user] = user.id
+      redirect_to_stored
+    else
+      redirect '/login'
+    end
+end
+
+get '/logout' do
+  session[:user] = nil
+  @message = "in case it weren't obvious, you've logged out"
+  redirect '/'
+end
+
+get '/signup' do
+  erb :signup
+end
+
+post '/signup' do
+  @user = User.new(:email => params[:email], :videotron => params[:videotron], :password => params[:password], :password_confirmation => params[:password_confirmation])
+  if @user.save
+    session[:user] = @user.id
+    redirect '/'
+  else
+    session[:flash] = "failure!"
+    redirect '/'
+  end
+end
+
+# delete '/user/:id' do
+#   user = User.first(params[:id])
+#   user.delete
+#   session[:flash] = "way to go, you deleted a user"
+#   redirect '/'
+# end
+
+private
+
+def login_required
+  if session[:user]
+    return true
+  else
+    session[:return_to] = request.fullpath
+    redirect '/login'
+    return false 
+  end
+end
+
+def current_user
+  User.first(session[:user])
+end
+
+def redirect_to_stored
+  if return_to = session[:return_to]
+    session[:return_to] = nil
+    redirect return_to
+  else
+    redirect '/'
+  end
+end
+# /Auth actions 
+
+# forfaits :
 $hashforfaits = {
   "intermediaire" => {
     "name" => 'Internet Intermédiaire',
@@ -88,3 +189,4 @@ $hashforfaits = {
     "amont" => 100
   }
 }
+# /forfaits 
