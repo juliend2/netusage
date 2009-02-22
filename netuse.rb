@@ -1,13 +1,14 @@
 require 'rubygems'
 require 'sinatra'
 require 'hpricot'
-require 'open-uri' # to open the url of the videotron page
+require 'open-uri'  # to open the url of the videotron page
 require 'openssl'
 # auth-specific :
 require 'dm-core'
 require 'dm-timestamps'
 require 'dm-validations'
 require Pathname(__FILE__).dirname.expand_path + "models/user"
+require 'pony'      # pour envoi de mail aux users
 
 DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/users.db")
 DataMapper.auto_upgrade!
@@ -23,20 +24,25 @@ get '/' do
 end
 
 get '/getusage/:userid' do
-  
-  doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:userid]}") { |f| Hpricot(f) }
-# try...
-  tableau = doc.search("//table[@class='data']")
-  tbody = tableau.at("tbody")
-  firsttr = tbody.at("tr:nth(0)")
-  recu_go = firsttr.at("td:nth(3)")
-  recu_go.inner_html
-  
+  getdownload(params[:userid])    
 end
 
 get '/cronjob/:code' do
   # faire SEULEMENT si on recois ce parametre secret :
   if params[:code]=='fliptop777flipotap444supurtade'
+    users = User.all(:issent=>0)
+    users.each do |user|
+      # aller chercher le upload et le download dans la page (scrapping) :
+      @uploads = getupload(user.videotron)
+      @downloads = getdownload(user.videotron)
+      # si ca depasse la limite :
+      if (@uploads.to_f+user.margelimiteamont.to_f)>user.maxupload.to_f || (@downloads.to_f+user.margelimiteaval.to_f)>user.maxdownload.to_f
+        Pony.mail(:to => user.email, :from => 'mail@combienjetelecharge.com', :subject => 'Vous avez dépassé votre limite')
+      end
+    end
+    
+    # erb :cron, :locals=>{:users=>users}
+    
     # on va chercher tout les users qui ont le flag issent a 0
     # for each user :
       # aller chercher le upload et le download dans la page (scrapping)
@@ -128,6 +134,29 @@ end
 # end
 
 private
+
+def getdocument(videotronid)
+  doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{videotronid}") { |f| Hpricot(f) }
+end
+
+def getdownload(videotronid)
+  doc = getdocument(videotronid)
+# try...
+  tableau = doc.search("//table[@class='data']")
+  tbody = tableau.at("tbody")
+  firsttr = tbody.at("tr:nth(0)")
+  recu_go = firsttr.at("td:nth(3)")
+  recu_go.inner_html
+end
+
+def getupload(videotronid)
+  doc = getdocument(videotronid)
+  tableau = doc.search("//table[@class='data']")
+  tbody = tableau.at("tbody")
+  firsttr = tbody.at("tr:nth(0)")
+  recu_go = firsttr.at("td:nth(5)")
+  recu_go.inner_html
+end
 
 def login_required
   if session[:user]
