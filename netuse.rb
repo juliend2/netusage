@@ -35,7 +35,7 @@ get '/cronjob/:code' do
       # aller chercher le upload et le download dans la page (scrapping) :
       @uploads = getupload(user.videotron)
       @downloads = getdownload(user.videotron)
-      # si ca depasse la limite :
+      # si il est sur le point de depasser la limite :
       if (@uploads.to_f+user.margelimiteamont.to_f)>user.maxupload.to_f || (@downloads.to_f+user.margelimiteaval.to_f)>user.maxdownload.to_f
         Pony.mail(:to => user.email, :from => 'noreply@combienjetelecharge.com', :subject => 'Vous êtes sur le point de dépasser votre limite', :body => $surlepoint)
       end
@@ -243,4 +243,4 @@ $hashforfaits = {
 # /forfaits 
 
 # copy :
-$surlepoint = "Vous êtes sur le point de dépasser votre limite de téléchargement.\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\nVeuillez SVP ne pas répondre à ce courriel"
+$surlepoint = "Vous êtes sur le point de dépasser votre limite de téléchargement.\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nVeuillez SVP ne pas répondre à ce courriel"
