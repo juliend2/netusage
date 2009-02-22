@@ -37,7 +37,7 @@ get '/cronjob/:code' do
       @downloads = getdownload(user.videotron)
       # si ca depasse la limite :
       if (@uploads.to_f+user.margelimiteamont.to_f)>user.maxupload.to_f || (@downloads.to_f+user.margelimiteaval.to_f)>user.maxdownload.to_f
-        Pony.mail(:to => user.email, :from => 'mail@combienjetelecharge.com', :subject => 'Vous avez dépassé votre limite')
+        Pony.mail(:to => user.email, :from => 'noreply@combienjetelecharge.com', :subject => 'Vous êtes sur le point de dépasser votre limite', :body => $surlepoint)
       end
     end
     
@@ -114,8 +114,8 @@ post '/signup' do
   doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:videotron]}") { |f| Hpricot(f) }
   match = doc.to_s[/usage starts the (\d{1,2})/]
   jourfin = match[$1].to_i
-  margelimiteaval = ($hashforfaits[params[:forfait]]['aval']).to_f / 100 * 90
-  margelimiteamont = ($hashforfaits[params[:forfait]]['amont']).to_f / 100 * 90
+  margelimiteaval = ($hashforfaits[params[:forfait]]['aval']).to_f / 100 * 10
+  margelimiteamont = ($hashforfaits[params[:forfait]]['amont']).to_f / 100 * 10
   @user = User.new(:email => params[:email], :videotron => params[:videotron], :jourfin => jourfin, :maxdownload=>$hashforfaits[params[:forfait]]['aval'], :maxupload=>$hashforfaits[params[:forfait]]['amont'], :password => params[:password], :password_confirmation => params[:password_confirmation], :margelimiteaval => margelimiteaval, :margelimiteamont => margelimiteamont, :issent=>0)
   if @user.save
     session[:user] = @user.id
@@ -241,3 +241,6 @@ $hashforfaits = {
   }
 }
 # /forfaits 
+
+# copy :
+$surlepoint = "Vous êtes sur le point de dépasser votre limite de téléchargement.\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\nVeuillez SVP ne pas répondre à ce courriel"
