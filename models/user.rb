@@ -11,6 +11,9 @@ class User
   property :jourfin, Integer
   property :maxdownload, Integer
   property :maxupload, Integer
+  property :margelimiteaval, Float
+  property :margelimiteamont, Float
+  property :issent, Integer
   property :created_at, DateTime
 
   validates_present :password_confirmation

@@ -37,7 +37,12 @@ end
 get '/cronjob/:code' do
   # faire SEULEMENT si on recois ce parametre secret :
   if params[:code]=='fliptop777flipotap444supurtade'
-    
+    # on va chercher tout les users qui ont le flag issent a 0
+    # for each user :
+      # aller chercher le upload et le download dans la page (scrapping)
+      # if (upload+margelimiteamont)>maxupload || (download+margelimiteaval)>maxdownload :
+        # envoyer un email
+        # setter issent a 1
   end
 end
 
@@ -103,7 +108,9 @@ post '/signup' do
   doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:videotron]}") { |f| Hpricot(f) }
   match = doc.to_s[/usage starts the (\d{1,2})/]
   jourfin = match[$1].to_i
-  @user = User.new(:email => params[:email], :videotron => params[:videotron], :jourfin => jourfin, :maxdownload=>$hashforfaits[params[:forfait]]['aval'], :maxupload=>$hashforfaits[params[:forfait]]['amont'], :password => params[:password], :password_confirmation => params[:password_confirmation])
+  margelimiteaval = ($hashforfaits[params[:forfait]]['aval']).to_f / 100 * 90
+  margelimiteamont = ($hashforfaits[params[:forfait]]['amont']).to_f / 100 * 90
+  @user = User.new(:email => params[:email], :videotron => params[:videotron], :jourfin => jourfin, :maxdownload=>$hashforfaits[params[:forfait]]['aval'], :maxupload=>$hashforfaits[params[:forfait]]['amont'], :password => params[:password], :password_confirmation => params[:password_confirmation], :margelimiteaval => margelimiteaval, :margelimiteamont => margelimiteamont, :issent=>0)
   if @user.save
     session[:user] = @user.id
     redirect '/'
