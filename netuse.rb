@@ -9,7 +9,7 @@ require 'dm-timestamps'
 require 'dm-validations'
 require Pathname(__FILE__).dirname.expand_path + "models/user"
 
-DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/test.db")
+DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/users.db")
 DataMapper.auto_upgrade!
 
 use Rack::Session::Cookie, :secret => 'A1 sauce 1s so good you should use 1t on a11 yr st34ksssss'
@@ -31,6 +31,14 @@ get '/getusage/:userid' do
   firsttr = tbody.at("tr:nth(0)")
   recu_go = firsttr.at("td:nth(3)")
   recu_go.inner_html
+  
+end
+
+get '/cronjob/:code' do
+  # faire SEULEMENT si on recois ce parametre secret :
+  if params[:code]=='fliptop777flipotap444supurtade'
+    
+  end
 end
 
 post '/getusage' do
@@ -58,7 +66,10 @@ get '/profile' do
     @user = User.first(:id=>session[:user])
     @videotron = @user.videotron
     @email = @user.email
-    erb :profile, :locals => {:id=>@user.id, :videotron => @videotron, :email => @email}
+    @mdownload = @user.maxdownload
+    @mupload = @user.maxupload
+    @jourfin = @user.jourfin
+    erb :profile, :locals => {:id=>@user.id, :videotron => @videotron, :email => @email, :mdownload=>@mdownload, :mupload=>@mupload, :jourfin=>@jourfin}
   else
     'You need to log in to see your profile.'
   end
@@ -84,11 +95,15 @@ get '/logout' do
 end
 
 get '/signup' do
-  erb :signup
+  erb :signup, :locals => {:forfaits => $hashforfaits }
 end
 
 post '/signup' do
-  @user = User.new(:email => params[:email], :videotron => params[:videotron], :password => params[:password], :password_confirmation => params[:password_confirmation])
+  # usage starts the 30\n
+  doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:videotron]}") { |f| Hpricot(f) }
+  match = doc.to_s[/usage starts the (\d{1,2})/]
+  jourfin = match[$1].to_i
+  @user = User.new(:email => params[:email], :videotron => params[:videotron], :jourfin => jourfin, :maxdownload=>$hashforfaits[params[:forfait]]['aval'], :maxupload=>$hashforfaits[params[:forfait]]['amont'], :password => params[:password], :password_confirmation => params[:password_confirmation])
   if @user.save
     session[:user] = @user.id
     redirect '/'

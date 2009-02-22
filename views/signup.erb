@@ -8,5 +8,13 @@
   nom d'utilisateur Videotron:
 	<input type="text" name="videotron" value="" id="user_videotron"/>
 	<br />
+	Choisissez votre forfait :<br/>
+	<select name="forfait">
+	<% forfaits.each do |key,forfait| %>
+		<option value="<%= key %>"><%= forfait['name'] %></option>
+	<% end %>
+	</select>
+	<br/>
+	
   <input value="sign up" type="submit" />
 </form>

@@ -8,6 +8,9 @@ class User
   property :hashed_password, String
   property :salt, String, :protected => true, :nullable => false
   property :videotron, String
+  property :jourfin, Integer
+  property :maxdownload, Integer
+  property :maxupload, Integer
   property :created_at, DateTime
 
   validates_present :password_confirmation
