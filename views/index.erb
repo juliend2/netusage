@@ -1,16 +1,55 @@
-<h1>Accueil</h1>
-<form action="/getusage" method="post" name="" accept-charset="utf-8">
-	Choisissez votre forfait :<br/>
-	<select name="forfait">
-	<% forfaits.each do |key,forfait| %>
-		<option value="<%= key %>"><%= forfait['name'] %></option>
-	<% end %>
-	</select>
+<%= include('views/_header.erb')%>
+
+		<div class="span-24">
+		<h2 class="tagline">
+			Recevez un <span>courriel</span> lorsque vous êtes sur le point de dépasser votre <span>limite mensuelle de téléchargement</span>.
+		</h2>
+		</div>
+	</div>
+	<div class="span-13 leftcol">
+	<h3>
+		Essayez-le :
+	</h3>
+	<form action="/getusage" method="post" name="" accept-charset="utf-8">
+		<label for="userid">Code Utilisateur Vid&eacute;otron<strong>*</strong> :</label>
+		<input type="text" class="text" name="userid" value="VL" id="userid"/>
+		<label for="user_forfait">Choisissez votre forfait :</label>
+		<select name="forfait" id="user_forfait" class="text">
+		<% forfaits.each do |key,forfait| %>
+			<option value="<%= key %>"><%= forfait['name'] %></option>
+		<% end %>
+		</select>
+		<p><input type="submit" value="Aller"/></p>
+	</form>
 	<br/>
-	<label for="userid">Userid</label><br/>
-	<input type="text" name="userid" value="" id="userid"/>
-	
+	<hr/>
+	<p class="note">* Yup, c&#x27;est seulement pour les utilisateurs de Vid&eacute;otron pour l&#x27;instant. Peut-&ecirc;tre qu&#x27;&eacute;ventuellement Bell sera aussi support&eacute;. &Ccedil;a demanderait plus de travail.</p>
+	</div>
+	<div class="span-8 rightcol blue">
+		<h3>
+			Inscrivez-vous <small>(<span class="gratuit">Gratuit!</span>)</small>
+		</h3>
+		<form action="/signup" method="post">
+		  	<label for="user_email">Votre adresse courriel :</label>   
+			<input class="text" id="user_email" name="email" size=30 type="text" />
+		    <label for="user_password">Choisissez votre mot de passe : 
+			<input class="text" id="user_password" name="password" size=30 type="password" />
+		  	<label for="user_password_confirmation">Confirmez votre mot de passe :</label> 
+			<input class="text" id="user_password_confirmation" name="password_confirmation" size=30 type="password" />
+			<label for="user_forfait">Votre forfait Vid&eacute;otron :</label>
+			<select name="forfait" id="user_forfait" class="text">
+			<% forfaits.each do |key,forfait| %>
+				<option value="<%= key %>"><%= forfait['name'] %></option>
+			<% end %>
+			</select>
+		  	<label for="user_videotron">Nom d'utilisateur Vid&eacute;otron * :</label>
+			<input class="text" type="text" name="videotron" value="VL" id="user_videotron"/>
 
-	<p><input type="submit" value="Aller"/></p>
-</form>
-
+		  <input value="Envoyer" type="submit" />
+		</form>
+		<br/>
+		<hr/>
+		<p class="note">* Yup, c&#x27;est seulement pour les utilisateurs de Vid&eacute;otron pour l&#x27;instant. Peut-&ecirc;tre qu&#x27;&eacute;ventuellement Bell sera aussi support&eacute;. &Ccedil;a va me demander plus de travail.</p>
+	</div>
+	</div>
+<%= include('views/_footer.erb')%>

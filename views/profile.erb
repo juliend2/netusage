@@ -1,11 +1,12 @@
-<html>
-<head>
-</head>
-<body>
+<%= include('views/_header.erb')%>
+<div class="span-8 rightcol blue">
+
 	# de compte videotron : <%=videotron%><br/>
 	email : <%=email%><br/>
 	Download limit : <%=mdownload%> Go<br/>
 	Upload limit : <%=mupload%> Go<br/>
 	Jour de la fin du mois : <%=jourfin%><br/>
-</body>
-</html>
+	Downloads : <%=downloads%><br/>
+	Uploads : <%=uploads%><br/>
+</div>
+<%= include('views/_footer.erb')%>

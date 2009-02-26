@@ -3,17 +3,15 @@ require 'sinatra'
 require 'hpricot'
 require 'open-uri'  # to open the url of the videotron page
 require 'openssl'
+require 'pony'      # pour envoi de mail aux users
 # auth-specific :
 require 'dm-core'
 require 'dm-timestamps'
 require 'dm-validations'
 require Pathname(__FILE__).dirname.expand_path + "models/user"
-require 'pony'      # pour envoi de mail aux users
-
 DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/users.db")
 DataMapper.auto_upgrade!
-
-use Rack::Session::Cookie, :secret => 'A1 sauce 1s so good you should use 1t on a11 yr st34ksssss'
+use Rack::Session::Cookie, :secret => 't0Uche le d0Ux p0Ulet'
 # /auth-specific
 
 # because we crawl a https page :
@@ -24,7 +22,7 @@ get '/' do
 end
 
 get '/getusage/:userid' do
-  getdownload(params[:userid])    
+  getdownload(params[:userid].strip)    
 end
 
 get '/cronjob/:code' do
@@ -37,11 +35,14 @@ get '/cronjob/:code' do
       @downloads = getdownload(user.videotron)
       # si il est sur le point de depasser la limite :
       if (@uploads.to_f+user.margelimiteamont.to_f)>user.maxupload.to_f || (@downloads.to_f+user.margelimiteaval.to_f)>user.maxdownload.to_f
-        Pony.mail(:to => user.email, :from => 'noreply@combienjetelecharge.com', :subject => 'Vous êtes sur le point de dépasser votre limite', :body => $surlepoint)
+        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite', :body => $surlepointaval)
+        user.issent = 1
+        user.save!
       end
+      
     end
     
-    # erb :cron, :locals=>{:users=>users}
+    erb :cron, :locals=>{:users=>users}
     
     # on va chercher tout les users qui ont le flag issent a 0
     # for each user :
@@ -62,7 +63,6 @@ post '/getusage' do
   erb :result, :locals => {:download => recu_go.inner_html, :forfait => $hashforfaits[params[:forfait]]['name'], :maxaval =>$hashforfaits[params[:forfait]]['aval']}
 end
 
-
 # Auth actions :
 get '/logged_in' do
   if session[:user]
@@ -80,7 +80,18 @@ get '/profile' do
     @mdownload = @user.maxdownload
     @mupload = @user.maxupload
     @jourfin = @user.jourfin
-    erb :profile, :locals => {:id=>@user.id, :videotron => @videotron, :email => @email, :mdownload=>@mdownload, :mupload=>@mupload, :jourfin=>@jourfin}
+    @downloads = getdownload(@user.videotron)
+    @uploads = getupload(@user.videotron)
+    erb :profile, :locals => {
+        :id=>@user.id, 
+        :downloads => @downloads,
+        :uploads => @uploads, 
+        :videotron => @videotron, 
+        :email => @email, 
+        :mdownload=>@mdownload, 
+        :mupload=>@mupload, 
+        :jourfin=>@jourfin
+    }
   else
     'You need to log in to see your profile.'
   end
@@ -114,12 +125,12 @@ post '/signup' do
   doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:videotron]}") { |f| Hpricot(f) }
   match = doc.to_s[/usage starts the (\d{1,2})/]
   jourfin = match[$1].to_i
-  margelimiteaval = ($hashforfaits[params[:forfait]]['aval']).to_f / 100 * 10
-  margelimiteamont = ($hashforfaits[params[:forfait]]['amont']).to_f / 100 * 10
-  @user = User.new(:email => params[:email], :videotron => params[:videotron], :jourfin => jourfin, :maxdownload=>$hashforfaits[params[:forfait]]['aval'], :maxupload=>$hashforfaits[params[:forfait]]['amont'], :password => params[:password], :password_confirmation => params[:password_confirmation], :margelimiteaval => margelimiteaval, :margelimiteamont => margelimiteamont, :issent=>0)
+  margelimiteaval = ($hashforfaits[params[:forfait]]['aval']).to_f / 100 * 20
+  margelimiteamont = ($hashforfaits[params[:forfait]]['amont']).to_f / 100 * 20
+  @user = User.new(:email => params[:email].strip, :videotron => params[:videotron].strip.upcase, :jourfin => jourfin, :maxdownload=>$hashforfaits[params[:forfait]]['aval'], :maxupload=>$hashforfaits[params[:forfait]]['amont'], :password => params[:password].strip, :password_confirmation => params[:password_confirmation].strip, :margelimiteaval => margelimiteaval, :margelimiteamont => margelimiteamont, :issent=>0)
   if @user.save
     session[:user] = @user.id
-    redirect '/'
+    redirect '/profile'
   else
     session[:flash] = "failure!"
     redirect '/'
@@ -141,7 +152,6 @@ end
 
 def getdownload(videotronid)
   doc = getdocument(videotronid)
-# try...
   tableau = doc.search("//table[@class='data']")
   tbody = tableau.at("tbody")
   firsttr = tbody.at("tr:nth(0)")
@@ -243,4 +253,9 @@ $hashforfaits = {
 # /forfaits 
 
 # copy :
-$surlepoint = "Vous êtes sur le point de dépasser votre limite de téléchargement.\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nVeuillez SVP ne pas répondre à ce courriel"
+$surlepointaval = "Vous êtes sur le point de dépasser votre limite de téléchargement (aval).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
+$depassementaval = "Vous avez dépassé votre limite de téléchargement (aval).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
+$surlepointamont = "Vous êtes sur le point de dépasser votre limite de téléversement (amont).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
+$depassementamont = "Vous avez dépassé votre limite de téléversement (amont).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
+
+

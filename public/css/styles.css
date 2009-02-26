@@ -1,0 +1,72 @@
+
+h1 {
+	color: #EC5609;
+	width: 414px;
+}
+h2 {
+	color: #666666;
+	font-size: 1.9em;
+}
+	h2 .quoi {
+		color: #373737;
+	}
+p {
+	margin-bottom: 0.2em;
+	font-size: 1.1em;
+}
+div.log {
+	text-align: right;
+	margin-top: 16px;
+}
+	div.log a {
+		color: #666;
+	}
+
+	.container {
+		background-color: #fff;
+		padding: 15px;
+	}
+
+form p {
+	margin: 0;
+}
+form input,form p {
+	display: block;
+	margin: 0.5em 0 0.5em 0;
+}
+form label,form p {
+	font-weight: normal;
+	color: #575757;
+}
+form select {
+	display: block;
+}
+form input[type="submit"] {
+	margin-top: 1em;
+	height: 2.46em;
+	font-size: 1.2em;
+}
+
+div.borderleft {padding-left:4px;margin-left:5px;border-left:1px solid #eee;}
+div.colborderleft {padding-left:24px;margin-left:25px;border-left:1px solid #eee;}
+div.rightcol {
+	padding: 15px;
+}
+
+.blue {
+	background: #F8FFFF;
+	padding: 15px;
+	-moz-background-gradient: 10px 10px 75px 75px red green; 
+}
+.leftcol {
+	padding: 15px;
+	padding-left: 0;
+	display: none;
+}
+h3 small .gratuit {
+	color: #EC5609;
+	font-weight: bold;
+}
+.note {
+	color: #999;
+}
