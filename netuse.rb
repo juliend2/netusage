@@ -1,3 +1,22 @@
+=begin
+###############################################################################################
+  *TODO* :                                                                                     
+-----------------------------------------------------------------------------------------------
+  -Faire un modele Forfait pour stocker les donnees sur les forfaits                         
+  -Faire la validation des champs pour signup et login                                       
+    -valider que le nom d'utilisateur Videotron est fonctionnel                              
+  -dans /cronjob/xxxx, faire que ca reset les issent a 0 si on est dans le debut de leur mois
+  -Pour le modele User,                                                                      
+    -Ajouter un champ forfait_id                                                             
+    -Faire des champs:                                                                       
+      issent_neardownload,                                                                   
+      issent_busteddownload,                                                                 
+      issent_nearupload,                                                                     
+      issent_busteddownload                                                                  
+                                                                                             
+###############################################################################################
+=end
+
 require 'rubygems'
 require 'sinatra'
 require 'hpricot'
@@ -11,14 +30,14 @@ require 'dm-validations'
 require Pathname(__FILE__).dirname.expand_path + "models/user"
 DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/users.db")
 DataMapper.auto_upgrade!
-use Rack::Session::Cookie, :secret => 't0Uche le d0Ux p0Ulet'
+use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
 # /auth-specific
 
 # because we crawl an https page :
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 get '/' do
-  erb :index, :locals => { :forfaits => $hashforfaits }
+  erb :index, :locals => { :forfaits => $hashforfaits, :user => session[:user]}
 end
 
 get '/getusage/:userid' do
@@ -85,7 +104,7 @@ get '/profile' do
         :jourfin=>@jourfin
     }
   else
-    'You need to log in to see your profile.'
+    redirect '/login'
   end
 end
 
@@ -129,12 +148,16 @@ post '/signup' do
   end
 end
 
-# delete '/user/:id' do
-#   user = User.first(params[:id])
-#   user.delete
-#   session[:flash] = "way to go, you deleted a user"
-#   redirect '/'
-# end
+# pour les users qui veulent en finir avec leur compte :
+delete '/user/:id' do
+  if session[:user] == params[:id].to_i
+    session[:user] = nil
+    @user = User.first(:id=>params[:id].to_s)
+    @user.destroy
+    session[:flash] = "Vous avez supprim&eacute; votre compte!<br/>&Agrave; la prochaine!"
+    redirect '/'
+  end
+end
 
 # function to include files in erb templates :
 def include(filename)
@@ -226,7 +249,7 @@ def redirect_to_stored
     session[:return_to] = nil
     redirect return_to
   else
-    redirect '/'
+    redirect '/profile'
   end
 end
 # /Auth actions 
