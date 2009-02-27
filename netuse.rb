@@ -14,7 +14,7 @@ DataMapper.auto_upgrade!
 use Rack::Session::Cookie, :secret => 't0Uche le d0Ux p0Ulet'
 # /auth-specific
 
-# because we crawl a https page :
+# because we crawl an https page :
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 get '/' do
@@ -22,34 +22,26 @@ get '/' do
 end
 
 get '/getusage/:userid' do
-  getdownload(params[:userid].strip)    
+  getdownload(params[:userid].strip)
 end
 
 get '/cronjob/:code' do
   # faire SEULEMENT si on recois ce parametre secret :
   if params[:code]=='fliptop777flipotap444supurtade'
-    users = User.all(:issent=>0)
+    users = User.all(:issent=>0) # on va chercher tout les users qui ont le flag issent a 0
     users.each do |user|
       # aller chercher le upload et le download dans la page (scrapping) :
       @uploads = getupload(user.videotron)
       @downloads = getdownload(user.videotron)
       # si il est sur le point de depasser la limite :
       if (@uploads.to_f+user.margelimiteamont.to_f)>user.maxupload.to_f || (@downloads.to_f+user.margelimiteaval.to_f)>user.maxdownload.to_f
-        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite', :body => $surlepointaval)
+        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite', :body => $surlepointaval) # envoyer un email
+        # setter issent a 1 :
         user.issent = 1
         user.save!
       end
-      
     end
-    
     erb :cron, :locals=>{:users=>users}
-    
-    # on va chercher tout les users qui ont le flag issent a 0
-    # for each user :
-      # aller chercher le upload et le download dans la page (scrapping)
-      # if (upload+margelimiteamont)>maxupload || (download+margelimiteaval)>maxdownload :
-        # envoyer un email
-        # setter issent a 1
   end
 end
 
@@ -144,10 +136,57 @@ end
 #   redirect '/'
 # end
 
+# function to include files in erb templates :
+def include(filename)
+  all_doc = []
+  File.open(filename) do |file|
+    while line = file.gets
+      all_doc.push(line)
+    end
+  end
+  all_doc.join("")
+end
+
 private
 
 def getdocument(videotronid)
-  doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{videotronid}") { |f| Hpricot(f) }
+  now = Time.now()
+  document=''
+  # le fichier existe?
+  if File.exist?('cache/'+videotronid)
+    lastwrite = File.ctime('cache/'+videotronid)
+    # le fichier est plus ancien qu'aujourd'hui?
+    if lastwrite.day >= now.day
+      document = readfile('cache/'+videotronid)
+    else
+      document = writetofile(videotronid)
+    end
+  else
+    # le fichier n'existe pas ?
+    document = writetofile(videotronid)
+  end
+  return document
+end
+
+def readfile(filename)
+  all_doc = []
+  File.open(filename) do |file|
+    while line = file.gets
+      all_doc.push(line)
+    end
+  end
+  doc = all_doc.join("")
+  Hpricot(doc)
+end
+
+def writetofile(videotronid)
+  url = "https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{videotronid}"
+  doc = open(url) { |f| Hpricot(f) }
+  outputfile = 'cache/'+videotronid # nom du fichier a generer 
+  fout = File.open(outputfile, "w")
+  fout.puts doc
+  fout.close
+  return doc
 end
 
 def getdownload(videotronid)
@@ -258,4 +297,5 @@ $depassementaval = "Vous avez dépassé votre limite de téléchargement (aval).
 $surlepointamont = "Vous êtes sur le point de dépasser votre limite de téléversement (amont).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
 $depassementamont = "Vous avez dépassé votre limite de téléversement (amont).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
 
+# "Vous êtes sur le point de dépasser votre limite de téléchargement (aval) et il vous reste #{jours} jours avant la fin de votre mois de facturation.\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
 
