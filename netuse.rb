@@ -2,18 +2,26 @@
 ###############################################################################################
   *TODO* :                                                                                     
 -----------------------------------------------------------------------------------------------
-  -Faire un modele Forfait pour stocker les donnees sur les forfaits                         
+  # -Faire un modele Forfait pour stocker les donnees sur les forfaits                         
   -Faire la validation des champs pour signup et login                                       
     -valider que le nom d'utilisateur Videotron est fonctionnel                              
   -dans /cronjob/xxxx, faire que ca reset les issent a 0 si on est dans le debut de leur mois
-  -Pour le modele User,                                                                      
-    -Ajouter un champ forfait_id                                                             
-    -Faire des champs:                                                                       
-      issent_neardownload,                                                                   
-      issent_busteddownload,                                                                 
-      issent_nearupload,                                                                     
-      issent_busteddownload                                                                  
-                                                                                             
+  # -Pour le modele User,                                                                      
+    # -Ajouter un champ forfait_id                                                             
+    # -Faire des champs:                                                                       
+    #   issent_neardownload,                                                                   
+    #   issent_busteddownload,                                                                 
+    #   issent_nearupload,                                                                     
+    #   issent_busteddownload                                                                  
+  -faire un cron-job pour appeller l'action /cronjob/:code (en dev et en prod) a chaque 6 am
+  -pour les liens dans les fichiers erb, faire qu'ils soient independants du nom de domaine
+  
+  Phase 2:
+  -faire un video pour expliquer le but de l'affaire, mettre ca dans l'accueil
+  -fil RSS
+  -Widget Netvibes
+  -Widget Dashboard
+  -Application web pour iPhone (version alternative des vues)
 ###############################################################################################
 =end
 
@@ -27,7 +35,8 @@ require 'pony'      # pour envoi de mail aux users
 require 'dm-core'
 require 'dm-timestamps'
 require 'dm-validations'
-require Pathname(__FILE__).dirname.expand_path + "models/user"
+require Pathname(__FILE__).dirname.expand_path + "models/user" # model user
+require Pathname(__FILE__).dirname.expand_path + "models/forfait" # model forfait
 DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/users.db")
 DataMapper.auto_upgrade!
 use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
@@ -37,7 +46,7 @@ use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 get '/' do
-  erb :index, :locals => { :forfaits => $hashforfaits, :user => session[:user]}
+  erb :index, :locals => { :forfaits => getforfaits(), :user => session[:user]}
 end
 
 get '/getusage/:userid' do
@@ -64,6 +73,10 @@ get '/cronjob/:code' do
   end
 end
 
+get '/test' do
+  erb :test, :locals=>{:forfaits=>Forfait.all()}
+end
+
 post '/getusage' do
   doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:userid]}") { |f| Hpricot(f) }
 # try...
@@ -71,7 +84,7 @@ post '/getusage' do
   tbody = tableau.at("tbody")
   firsttr = tbody.at("tr:nth(0)")
   recu_go = firsttr.at("td:nth(3)")
-  erb :result, :locals => {:download => recu_go.inner_html, :forfait => $hashforfaits[params[:forfait]]['name'], :maxaval =>$hashforfaits[params[:forfait]]['aval']}
+  erb :result, :locals => {:download => recu_go.inner_html, :forfait => getforfaits()[params[:forfait]]['name'], :maxaval =>getforfaits()[params[:forfait]]['aval']}
 end
 
 # Auth actions :
@@ -86,10 +99,11 @@ end
 get '/profile' do
   if session[:user]
     @user = User.first(:id=>session[:user])
+    @forfait = Forfait.first(:id=>@user.forfait_id)
     @videotron = @user.videotron
     @email = @user.email
-    @mdownload = @user.maxdownload
-    @mupload = @user.maxupload
+    # @mdownload = @user.maxdownload
+    # @mupload = @user.maxupload
     @jourfin = @user.jourfin
     @downloads = getdownload(@user.videotron)
     @uploads = getupload(@user.videotron)
@@ -99,8 +113,8 @@ get '/profile' do
         :uploads => @uploads, 
         :videotron => @videotron, 
         :email => @email, 
-        :mdownload=>@mdownload, 
-        :mupload=>@mupload, 
+        :mdownload=>@forfait.aval, 
+        :mupload=>@forfait.amont, 
         :jourfin=>@jourfin
     }
   else
@@ -128,17 +142,29 @@ get '/logout' do
 end
 
 get '/signup' do
-  erb :signup, :locals => {:forfaits => $hashforfaits }
+  erb :signup, :locals => {:forfaits => getforfaits() }
 end
 
 post '/signup' do
   # usage starts the 30\n
+  forfaits = getforfaits()
   doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:videotron]}") { |f| Hpricot(f) }
   match = doc.to_s[/usage starts the (\d{1,2})/]
   jourfin = match[$1].to_i
-  margelimiteaval = ($hashforfaits[params[:forfait]]['aval']).to_f / 100 * 20
-  margelimiteamont = ($hashforfaits[params[:forfait]]['amont']).to_f / 100 * 20
-  @user = User.new(:email => params[:email].strip, :videotron => params[:videotron].strip.upcase, :jourfin => jourfin, :maxdownload=>$hashforfaits[params[:forfait]]['aval'], :maxupload=>$hashforfaits[params[:forfait]]['amont'], :password => params[:password].strip, :password_confirmation => params[:password_confirmation].strip, :margelimiteaval => margelimiteaval, :margelimiteamont => margelimiteamont, :issent=>0)
+  margelimiteaval = (forfaits[params[:forfait]]['aval']).to_f / 100 * 20
+  margelimiteamont = (forfaits[params[:forfait]]['amont']).to_f / 100 * 20
+  @user = User.new(:email => params[:email].strip, 
+                  :videotron => params[:videotron].strip.upcase, 
+                  :jourfin => jourfin, 
+                  :forfait_id => params[:forfait].to_i,
+                  :password => params[:password].strip, 
+                  :password_confirmation => params[:password_confirmation].strip, 
+                  :margelimiteaval => margelimiteaval, 
+                  :margelimiteamont => margelimiteamont, 
+                  :issent_neardownload => 0,
+                  :issent_busteddownload => 0,
+                  :issent_nearupload => 0,
+                  :issent_busteddownload => 0)
   if @user.save
     session[:user] = @user.id
     redirect '/profile'
@@ -171,6 +197,19 @@ def include(filename)
 end
 
 private
+
+def getforfaits
+  forfaits = Hash.new
+  Forfait.all.each do |forfait|
+    forfaits[forfait.id.to_s] = {
+      'id'=>forfait.id,
+      'name'=>forfait.name,
+      'aval'=>forfait.aval,
+      'amont'=>forfait.amont
+    }
+  end
+  forfaits.sort.to_hash
+end
 
 def getdocument(videotronid)
   now = Time.now()
@@ -252,7 +291,7 @@ def redirect_to_stored
     redirect '/profile'
   end
 end
-# /Auth actions 
+
 
 # forfaits :
 $hashforfaits = {

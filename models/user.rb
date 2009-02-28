@@ -9,11 +9,13 @@ class User
   property :salt, String, :protected => true, :nullable => false
   property :videotron, String
   property :jourfin, Integer
-  property :maxdownload, Integer
-  property :maxupload, Integer
   property :margelimiteaval, Float
   property :margelimiteamont, Float
-  property :issent, Integer
+  property :forfait_id, Integer
+  property :issent_neardownload, Integer
+  property :issent_busteddownload, Integer
+  property :issent_nearupload, Integer
+  property :issent_busteddownload, Integer
   property :created_at, DateTime
 
   validates_present :password_confirmation
