@@ -15,7 +15,7 @@ class User
   property :issent_neardownload, Integer
   property :issent_busteddownload, Integer
   property :issent_nearupload, Integer
-  property :issent_busteddownload, Integer
+  property :issent_bustedupload, Integer
   property :created_at, DateTime
 
   validates_present :password_confirmation

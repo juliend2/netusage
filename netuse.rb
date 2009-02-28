@@ -56,18 +56,37 @@ end
 get '/cronjob/:code' do
   # faire SEULEMENT si on recois ce parametre secret :
   if params[:code]=='fliptop777flipotap444supurtade'
-    users = User.all(:issent=>0) # on va chercher tout les users qui ont le flag issent a 0
+    users = User.all() # on va chercher tout les users qui ont le flag issent a 0
     users.each do |user|
+      @forfait = Forfait.first(:id=>user.forfait_id)
       # aller chercher le upload et le download dans la page (scrapping) :
       @uploads = getupload(user.videotron)
       @downloads = getdownload(user.videotron)
-      # si il est sur le point de depasser la limite :
-      if (@uploads.to_f+user.margelimiteamont.to_f)>user.maxupload.to_f || (@downloads.to_f+user.margelimiteaval.to_f)>user.maxdownload.to_f
-        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite', :body => $surlepointaval) # envoyer un email
-        # setter issent a 1 :
-        user.issent = 1
+      
+      # download :
+      if (@downloads.to_f+user.margelimiteaval.to_f)>@forfait.aval.to_f
+        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite de téléchargement', :body => $surlepointaval) # envoyer un email
+        user.issent_neardownload = 1
         user.save!
       end
+      if (@downloads.to_f)>@forfait.aval.to_f
+        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Attention, Vous avez dépassé votre limite de téléchargement', :body => $depassementaval) # envoyer un email
+        user.issent_busteddownload = 1
+        user.save!
+      end
+      
+      # upload :
+      if (@uploads.to_f+user.margelimiteamont.to_f)>@forfait.amont.to_f
+        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite de téléversement', :body => $surlepointamont) # envoyer un email
+        user.issent_nearupload = 1
+        user.save!
+      end
+      if (@uploads.to_f)>@forfait.amont.to_f
+        Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Attention, Vous avez dépassé votre limite de téléversement', :body => $depassementamont) # envoyer un email
+        user.issent_bustedupload = 1
+        user.save!
+      end
+      
     end
     erb :cron, :locals=>{:users=>users}
   end
@@ -164,7 +183,7 @@ post '/signup' do
                   :issent_neardownload => 0,
                   :issent_busteddownload => 0,
                   :issent_nearupload => 0,
-                  :issent_busteddownload => 0)
+                  :issent_bustedupload => 0)
   if @user.save
     session[:user] = @user.id
     redirect '/profile'
