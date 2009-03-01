@@ -8,7 +8,7 @@ class User
   property :hashed_password, String
   property :salt, String, :protected => true, :nullable => false
   property :videotron, String
-  property :jourfin, Integer
+  property :jourdebut, Integer
   property :margelimiteaval, Float
   property :margelimiteamont, Float
   property :forfait_id, Integer

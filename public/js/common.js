@@ -1,5 +1,7 @@
 $(document).ready(function(){
-	$('input#user_videotron').css({'color':'#888'});
+	if ($('input#user_videotron').val()=='VL') {
+		$('input#user_videotron').css({'color':'#888'});
+	};
 	$('input#user_videotron').focus(function(){
 		// si on a rien entre :
 		if ($(this).val()=='VL') {

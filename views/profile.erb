@@ -2,9 +2,9 @@
 <div class="log span-6">
 	<p>
 	<%if id %>
-	<a href="http://192.168.1.102:4567/logout">Se d&eacute;connecter</a>
+	<a href="/logout">Se d&eacute;connecter</a>
 	<%else%>
-	<a href="http://192.168.1.102:4567/login">S'identifier</a>
+	<a href="/login">S'identifier</a>
 	<%end%>
 	</p>
 </div>
@@ -15,10 +15,12 @@
 		<tr><td class="typedata">Adresse courriel :</td><td><strong><%=email%></strong></td></tr>
 		<tr><td class="typedata">Limite de t&eacute;l&eacute;chargement (aval) :</td><td><strong><%=mdownload%> Go</strong></td></tr>
 		<tr><td class="typedata">Limite de t&eacute;l&eacute;versement (amont) : </td><td><strong><%=mupload%> Go</strong></td></tr>
-		<tr><td class="typedata">Dernier jour de facturation mensuelle :</td><td><strong><%=jourfin%></strong></td></tr>
 		<tr><td class="typedata">Re&ccedil;u en aval (t&eacute;l&eacute;charg&eacute;) : </td><td><strong><%=downloads%> Go</strong></td></tr>
 		<tr><td class="typedata">Transmis en amont (t&eacute;l&eacute;vers&eacute;) :</td><td><strong><%=uploads%> Go</strong></td></tr>
 	</table>
+	<p>
+		Votre p&eacute;riode de consommation d&eacute;bute le <strong><%=jourdebut%>e</strong> jour de chaque mois.
+	</p>
 	<form method="post" action="/user/<%=id%>" onsubmit="return confirm('Etes vous sur de vouloir supprimer votre compte?\nToutes vos informations seront supprimees de notre base de donnee')">
 	  <input name="_method" type="hidden" value="delete" />
 	  <div><button type="submit">Supprimer mon compte</button></div>

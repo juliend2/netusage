@@ -1,20 +1,20 @@
 =begin
 ###############################################################################################
-  *TODO* :                                                                                     
+  *TODO* :
 -----------------------------------------------------------------------------------------------
-  # -Faire un modele Forfait pour stocker les donnees sur les forfaits                         
-  -Faire la validation des champs pour signup et login                                       
-    -valider que le nom d'utilisateur Videotron est fonctionnel                              
-  -dans /cronjob/xxxx, faire que ca reset les issent a 0 si on est dans le debut de leur mois
-  # -Pour le modele User,                                                                      
-    # -Ajouter un champ forfait_id                                                             
-    # -Faire des champs:                                                                       
-    #   issent_neardownload,                                                                   
-    #   issent_busteddownload,                                                                 
-    #   issent_nearupload,                                                                     
-    #   issent_busteddownload                                                                  
+  # -Faire un modele Forfait pour stocker les donnees sur les forfaits
+  -Faire la validation des champs pour signup et login
+    -valider que le nom d'utilisateur Videotron est fonctionnel
+  # -dans /cronjob/xxxx, faire que ca reset les issent a 0 si on est dans le debut de leur mois
+  # -Pour le modele User,
+    # -Ajouter un champ forfait_id
+    # -Faire des champs:
+    #   issent_neardownload,
+    #   issent_busteddownload,
+    #   issent_nearupload,
+    #   issent_busteddownload
   -faire un cron-job pour appeller l'action /cronjob/:code (en dev et en prod) a chaque 6 am
-  -pour les liens dans les fichiers erb, faire qu'ils soient independants du nom de domaine
+  # -pour les liens dans les fichiers erb, faire qu'ils soient independants du nom de domaine
   
   Phase 2:
   -faire un video pour expliquer le but de l'affaire, mettre ca dans l'accueil
@@ -25,8 +25,10 @@
 ###############################################################################################
 =end
 
+# Include gems :
 require 'rubygems'
 require 'sinatra'
+require 'activesupport'
 require 'hpricot'
 require 'open-uri'  # to open the url of the videotron page
 require 'openssl'
@@ -63,6 +65,7 @@ get '/cronjob/:code' do
       @uploads = getupload(user.videotron)
       @downloads = getdownload(user.videotron)
       
+      # NOTIFICATION :
       # download :
       if (@downloads.to_f+user.margelimiteaval.to_f)>@forfait.aval.to_f
         Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite de téléchargement', :body => $surlepointaval) # envoyer un email
@@ -74,7 +77,6 @@ get '/cronjob/:code' do
         user.issent_busteddownload = 1
         user.save!
       end
-      
       # upload :
       if (@uploads.to_f+user.margelimiteamont.to_f)>@forfait.amont.to_f
         Pony.mail(:to => user.email, :from => 'CombienJeTelecharge.com <noreply@combienjetelecharge.com>', :subject => 'Vous êtes sur le point de dépasser votre limite de téléversement', :body => $surlepointamont) # envoyer un email
@@ -87,13 +89,23 @@ get '/cronjob/:code' do
         user.save!
       end
       
+      # RESET FLAG DE NOTIFICATION :
+      if is_day_after_end_of_month(user.jourdebut.to_i)
+        user.issent_bustedupload = 0
+        user.issent_nearupload = 0
+        user.issent_busteddownload = 0
+        user.issent_neardownload = 0
+        user.save!
+      end
+      
     end
     erb :cron, :locals=>{:users=>users}
   end
 end
 
 get '/test' do
-  erb :test, :locals=>{:forfaits=>Forfait.all()}
+  # test case
+  # erb :test, :locals=>{:valeur=>is_day_after_end_of_month(27)}
 end
 
 post '/getusage' do
@@ -123,7 +135,7 @@ get '/profile' do
     @email = @user.email
     # @mdownload = @user.maxdownload
     # @mupload = @user.maxupload
-    @jourfin = @user.jourfin
+    @jourdebut = @user.jourdebut
     @downloads = getdownload(@user.videotron)
     @uploads = getupload(@user.videotron)
     erb :profile, :locals => {
@@ -134,7 +146,7 @@ get '/profile' do
         :email => @email, 
         :mdownload=>@forfait.aval, 
         :mupload=>@forfait.amont, 
-        :jourfin=>@jourfin
+        :jourdebut=>@jourdebut
     }
   else
     redirect '/login'
@@ -169,12 +181,12 @@ post '/signup' do
   forfaits = getforfaits()
   doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:videotron]}") { |f| Hpricot(f) }
   match = doc.to_s[/usage starts the (\d{1,2})/]
-  jourfin = match[$1].to_i
+  jourdebut = match[$1].to_i
   margelimiteaval = (forfaits[params[:forfait]]['aval']).to_f / 100 * 20
   margelimiteamont = (forfaits[params[:forfait]]['amont']).to_f / 100 * 20
   @user = User.new(:email => params[:email].strip, 
                   :videotron => params[:videotron].strip.upcase, 
-                  :jourfin => jourfin, 
+                  :jourdebut => jourdebut, 
                   :forfait_id => params[:forfait].to_i,
                   :password => params[:password].strip, 
                   :password_confirmation => params[:password_confirmation].strip, 
@@ -311,6 +323,28 @@ def redirect_to_stored
   end
 end
 
+def days_in(yearnum,monthnum)
+ Date.civil(yearnum,monthnum,-1).day
+end
+
+def is_day_after_end_of_month(end_of_month_day)
+  hier = 1.days.ago.day.to_i  
+  nbjoursdansmois = days_in(1.days.ago.year,1.days.ago.month)
+  
+  if end_of_month_day > nbjoursdansmois
+    if hier == nbjoursdansmois
+      true
+    else
+      false
+    end
+  else
+    if hier == end_of_month_day
+      true
+    else
+      false
+    end
+  end
+end
 
 # forfaits :
 $hashforfaits = {
