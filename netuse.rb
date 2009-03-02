@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------------------------
   # -Faire un modele Forfait pour stocker les donnees sur les forfaits
   -Faire la validation des champs pour signup et login
-    -valider que le nom d'utilisateur Videotron est fonctionnel
+    # -valider que le nom d'utilisateur Videotron est fonctionnel
   # -dans /cronjob/xxxx, faire que ca reset les issent a 0 si on est dans le debut de leur mois
   # -Pour le modele User,
     # -Ajouter un champ forfait_id
@@ -22,20 +22,23 @@
   -Widget Netvibes
   -Widget Dashboard
   -Application web pour iPhone (version alternative des vues)
+  -Rendre la methode cron discrete pour ne pas abuser du serveur si ya beaucoup d'utilisateurs
+  -"Vous êtes sur le point de dépasser votre limite de téléchargement (aval) et il vous reste #{jours} jours avant la fin de votre mois de facturation.\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
+  -mettre graphique dans le profil et afficher les downloads pour chaque jours
 ###############################################################################################
 =end
 
 # Include gems :
 require 'rubygems'
 require 'sinatra'
-require 'activesupport'
-require 'hpricot'
-require 'open-uri'  # to open the url of the videotron page
-require 'openssl'
-require 'pony'      # pour envoi de mail aux users
+require 'activesupport' # pour la gestion des dates avancees
+require 'hpricot'       # pour scrapper les infos dans le html
+require 'open-uri'      # to open the url of the videotron page
+require 'openssl'       # parce quon scrap les infos sur une page https
+require 'pony'          # pour envoi de mail aux users
 # auth-specific :
-require 'dm-core'
-require 'dm-timestamps'
+require 'dm-core'       
+require 'dm-timestamps' 
 require 'dm-validations'
 require Pathname(__FILE__).dirname.expand_path + "models/user" # model user
 require Pathname(__FILE__).dirname.expand_path + "models/forfait" # model forfait
@@ -47,8 +50,9 @@ use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
 # because we crawl an https page :
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
+# ---------------Actions : -----------------
 get '/' do
-  erb :index, :locals => { :forfaits => getforfaits(), :user => session[:user]}
+  erb :index, :locals => { :forfaits => getforfaits(), :user => session[:user], :errors=>[]}
 end
 
 get '/getusage/:userid' do
@@ -62,8 +66,8 @@ get '/cronjob/:code' do
     users.each do |user|
       @forfait = Forfait.first(:id=>user.forfait_id)
       # aller chercher le upload et le download dans la page (scrapping) :
-      @uploads = getupload(user.videotron)
-      @downloads = getdownload(user.videotron)
+      @uploads = getupload(user.videotron, true)
+      @downloads = getdownload(user.videotron, true)
       
       # NOTIFICATION :
       # download :
@@ -105,7 +109,8 @@ end
 
 get '/test' do
   # test case
-  # erb :test, :locals=>{:valeur=>is_day_after_end_of_month(27)}
+  # retour= writetofile('VLISKLCE')
+  erb :test, :locals=>{:valeur=>retour}
 end
 
 post '/getusage' do
@@ -144,9 +149,10 @@ get '/profile' do
         :uploads => @uploads, 
         :videotron => @videotron, 
         :email => @email, 
-        :mdownload=>@forfait.aval, 
+        :mdownload=> @forfait.aval, 
         :mupload=>@forfait.amont, 
-        :jourdebut=>@jourdebut
+        :jourdebut=>@jourdebut,
+        :isdayafterendofmonth => is_day_after_end_of_month(@jourdebut.to_i)
     }
   else
     redirect '/login'
@@ -172,16 +178,16 @@ get '/logout' do
   redirect '/'
 end
 
-get '/signup' do
-  erb :signup, :locals => {:forfaits => getforfaits() }
-end
-
 post '/signup' do
   # usage starts the 30\n
   forfaits = getforfaits()
   doc = open("https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{params[:videotron]}") { |f| Hpricot(f) }
   match = doc.to_s[/usage starts the (\d{1,2})/]
-  jourdebut = match[$1].to_i
+  begin
+    jourdebut = match[$1].to_i
+  rescue
+    errors = ["Le num&eacute;ro d'utilisateur Videotron que vous avez entr&eacute; n'est pas valide. Veuillez v&eacute;rifier qu'il est bien &eacute;crit."]
+  end
   margelimiteaval = (forfaits[params[:forfait]]['aval']).to_f / 100 * 20
   margelimiteamont = (forfaits[params[:forfait]]['amont']).to_f / 100 * 20
   @user = User.new(:email => params[:email].strip, 
@@ -189,19 +195,23 @@ post '/signup' do
                   :jourdebut => jourdebut, 
                   :forfait_id => params[:forfait].to_i,
                   :password => params[:password].strip, 
-                  :password_confirmation => params[:password_confirmation].strip, 
+                  # :password_confirmation => params[:password_confirmation].strip, 
                   :margelimiteaval => margelimiteaval, 
                   :margelimiteamont => margelimiteamont, 
                   :issent_neardownload => 0,
                   :issent_busteddownload => 0,
                   :issent_nearupload => 0,
                   :issent_bustedupload => 0)
-  if @user.save
-    session[:user] = @user.id
-    redirect '/profile'
+  if errors 
+    erb :index, :locals => {:forfaits => getforfaits(), :errors=> errors, :user => session[:user]}
   else
-    session[:flash] = "failure!"
-    redirect '/'
+    if @user.save
+      session[:user] = @user.id
+      redirect '/profile'
+    else
+      session[:flash] = "failure!"
+      redirect '/'
+    end
   end
 end
 
@@ -242,20 +252,27 @@ def getforfaits
   forfaits.sort.to_hash
 end
 
-def getdocument(videotronid)
+# ---------------File managing : -----------------
+def getdocument(videotronid, refreshfile=false)
   now = Time.now()
   document=''
-  # le fichier existe?
-  if File.exist?('cache/'+videotronid)
-    lastwrite = File.ctime('cache/'+videotronid)
-    # le fichier est plus ancien qu'aujourd'hui?
-    if lastwrite.day >= now.day
-      document = readfile('cache/'+videotronid)
+  # Si on ne rafraichis pas le fichier par defaut, on le lis ou on le cree :
+  if not refreshfile
+    # le fichier existe?
+    if File.exist?('cache/'+videotronid)
+      lastwrite = File.ctime('cache/'+videotronid)
+      # le fichier est plus ancien qu'aujourd'hui?
+      if lastwrite.day >= now.day
+        document = readfile('cache/'+videotronid)
+      else
+        document = writetofile(videotronid)
+      end
     else
+      # le fichier n'existe pas ?
       document = writetofile(videotronid)
     end
   else
-    # le fichier n'existe pas ?
+    # IF refreshfile is set to true... Refresh it!
     document = writetofile(videotronid)
   end
   return document
@@ -282,8 +299,8 @@ def writetofile(videotronid)
   return doc
 end
 
-def getdownload(videotronid)
-  doc = getdocument(videotronid)
+def getdownload(videotronid, refreshfile=false)
+  doc = getdocument(videotronid, refreshfile)
   tableau = doc.search("//table[@class='data']")
   tbody = tableau.at("tbody")
   firsttr = tbody.at("tr:nth(0)")
@@ -291,8 +308,8 @@ def getdownload(videotronid)
   recu_go.inner_html
 end
 
-def getupload(videotronid)
-  doc = getdocument(videotronid)
+def getupload(videotronid, refreshfile=false)
+  doc = getdocument(videotronid, refreshfile)
   tableau = doc.search("//table[@class='data']")
   tbody = tableau.at("tbody")
   firsttr = tbody.at("tr:nth(0)")
@@ -300,29 +317,7 @@ def getupload(videotronid)
   recu_go.inner_html
 end
 
-def login_required
-  if session[:user]
-    return true
-  else
-    session[:return_to] = request.fullpath
-    redirect '/login'
-    return false 
-  end
-end
-
-def current_user
-  User.first(session[:user])
-end
-
-def redirect_to_stored
-  if return_to = session[:return_to]
-    session[:return_to] = nil
-    redirect return_to
-  else
-    redirect '/profile'
-  end
-end
-
+# ---------------Time managing : -----------------
 def days_in(yearnum,monthnum)
  Date.civil(yearnum,monthnum,-1).day
 end
@@ -346,67 +341,33 @@ def is_day_after_end_of_month(end_of_month_day)
   end
 end
 
-# forfaits :
-$hashforfaits = {
-  "intermediaire" => {
-    "name" => 'Internet Intermédiaire',
-    "aval" => 2,
-    "amont" => 2
-  },
-  "hautevitesse" => {
-    "name" => 'Internet haute vitesse',
-    "aval" => 20,
-    "amont" => 10
-  },
-  "hautevitesseextreme" => {
-    "name" => 'Internet haute vitesse Extrême',
-    "aval" => 100,
-    "amont" => 100
-  },
-  "hautevitesseextremeplus" => {
-    "name" => 'Internet haute vitesse Extrême Plus',
-    "aval" => 20,
-    "amont" => 10
-  },
-  "tgv30" => {
-    "name" => 'Internet TGV 30',
-    "aval" => 70,
-    "amont" => 70
-  },
-  "tgv50" => {
-    "name" => 'Internet TGV 50',
-    "aval" => 100,
-    "amont" => 100
-  },
-  "intermediaireaffaire" => {
-    "name" => 'Internet Intermédiaire Affaires',
-    "aval" => 0,
-    "amont" => 0
-  },
-  "hautevitesseaffaire" => {
-    "name" => 'Internet haute vitesse Affaires',
-    "aval" => 0,
-    "amont" => 0
-  },
-  "hautevitesseextremeaffaire" => {
-    "name" => 'Internet haute vitesse Extrême Affaires',
-    "aval" => 0,
-    "amont" => 0
-  },
-  "tgv30affaire" => {
-    "name" => 'Internet TGV 30 Affaires',
-    "aval" => 100,
-    "amont" => 100
-  },
-  "tgv50affaire" => {
-    "name" => 'Internet TGV 50 Affaires',
-    "aval" => 100,
-    "amont" => 100
-  }
-}
-# /forfaits 
+# ---------------Auth : -----------------
+def login_required
+  if session[:user]
+    return true
+  else
+    session[:return_to] = request.fullpath
+    redirect '/login'
+    return false 
+  end
+end
 
-# copy :
+def current_user
+  User.first(session[:user])
+end
+
+def redirect_to_stored
+  if return_to = session[:return_to]
+    session[:return_to] = nil
+    redirect return_to
+  else
+    redirect '/profile'
+  end
+end
+
+
+
+# ---------------Copy : -----------------
 $surlepointaval = "Vous êtes sur le point de dépasser votre limite de téléchargement (aval).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
 $depassementaval = "Vous avez dépassé votre limite de téléchargement (aval).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."
 $surlepointamont = "Vous êtes sur le point de dépasser votre limite de téléversement (amont).\nPour plus d'informations, veuillez consulter votre profil sur http://combienjetelecharge.com .\n\nSVP ne pas répondre à ce courriel."

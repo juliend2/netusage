@@ -1,13 +1,14 @@
 class User
   include DataMapper::Resource
 
-  attr_accessor :password, :password_confirmation
-
+  # attr_accessor :password, :password_confirmation
+  attr_accessor :password
+  
   property :id, Serial, :protected => true
   property :email, String, :key => true, :nullable => false, :length => (5..40), :unique => true, :format => :email_address
   property :hashed_password, String
   property :salt, String, :protected => true, :nullable => false
-  property :videotron, String
+  property :videotron, String, :unique => true
   property :jourdebut, Integer
   property :margelimiteaval, Float
   property :margelimiteamont, Float
@@ -18,8 +19,8 @@ class User
   property :issent_bustedupload, Integer
   property :created_at, DateTime
 
-  validates_present :password_confirmation
-  validates_is_confirmed :password
+  # validates_present :password_confirmation
+  # validates_is_confirmed :password
 
   def self.authenticate(email, pass)
     current_user = first(:email => email)

@@ -18,13 +18,18 @@
 		<h3>
 			Inscrivez-vous <small>(<span class="gratuit">Gratuit!</span>)</small>
 		</h3>
+		<%if errors%>
+			<%errors.each do |error|%>
+			<span class="error"><%=error%></span>
+			<%end%>
+		<%end%>
 		<form action="/signup" method="post">
 		  	<label for="user_email">Votre adresse courriel :</label>   
 			<input class="text" id="user_email" name="email" size=30 type="text" />
 		    <label for="user_password">Choisissez votre mot de passe : 
 			<input class="text" id="user_password" name="password" size=30 type="password" />
-		  	<label for="user_password_confirmation">Confirmez votre mot de passe :</label> 
-			<input class="text" id="user_password_confirmation" name="password_confirmation" size=30 type="password" />
+		  	<!-- <label for="user_password_confirmation">Confirmez votre mot de passe :</label> 
+		  				<input class="text" id="user_password_confirmation" name="password_confirmation" size=30 type="password" /> -->
 			<label for="user_forfait">Votre forfait Vid&eacute;otron :</label>
 			<select name="forfait" id="user_forfait" class="text">
 				
@@ -40,7 +45,6 @@
 		<br/>
 		<hr/>
 		<p class="note">* Yup, c&#x27;est seulement pour les utilisateurs de Vid&eacute;otron pour l&#x27;instant. Peut-&ecirc;tre qu&#x27;&eacute;ventuellement Bell sera aussi support&eacute;. &Ccedil;a va me demander plus de travail.</p>
-	</div>
 	</div>
 	<script type="text/javascript" charset="utf-8">
 		// $("input[type='text']:first", document.forms[0]).focus();		

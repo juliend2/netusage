@@ -15,8 +15,20 @@
 		<tr><td class="typedata">Adresse courriel :</td><td><strong><%=email%></strong></td></tr>
 		<tr><td class="typedata">Limite de t&eacute;l&eacute;chargement (aval) :</td><td><strong><%=mdownload%> Go</strong></td></tr>
 		<tr><td class="typedata">Limite de t&eacute;l&eacute;versement (amont) : </td><td><strong><%=mupload%> Go</strong></td></tr>
-		<tr><td class="typedata">Re&ccedil;u en aval (t&eacute;l&eacute;charg&eacute;) : </td><td><strong><%=downloads%> Go</strong></td></tr>
-		<tr><td class="typedata">Transmis en amont (t&eacute;l&eacute;vers&eacute;) :</td><td><strong><%=uploads%> Go</strong></td></tr>
+		<tr><td class="typedata">Re&ccedil;u en aval (t&eacute;l&eacute;charg&eacute;) : </td><td>
+		<%if !isdayafterendofmonth%>
+		<strong><%=downloads%> Go</strong>
+		<%else%>
+		<strong>0 Go</strong>
+		<%end%>
+		</strong></td></tr>
+		<tr><td class="typedata">Transmis en amont (t&eacute;l&eacute;vers&eacute;) :</td><td>
+		<%if !isdayafterendofmonth%>
+		<strong><%=uploads%> Go</strong>
+		<%else%>
+		<strong>0 Go</strong>
+		<%end%>
+		</td></tr>
 	</table>
 	<p>
 		Votre p&eacute;riode de consommation d&eacute;bute le <strong><%=jourdebut%>e</strong> jour de chaque mois.

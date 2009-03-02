@@ -67,9 +67,19 @@ h3 small .gratuit {
 	color: #EC5609;
 	font-weight: bold;
 }
+.petit,h5 {
+	font-size: 0.9em;
+}
+div.disclaimer h5 {
+	margin: 1em 0 0 0;
+	font-weight: normal;
+}
 .note {
 	color: #999;
 }
 .typedata {
 	width: 210px;
+}
+.blue .error {
+	display: block;
 }
