@@ -42,6 +42,7 @@ require 'dm-timestamps'
 require 'dm-validations'
 require Pathname(__FILE__).dirname.expand_path + "models/user" # model user
 require Pathname(__FILE__).dirname.expand_path + "models/forfait" # model forfait
+
 DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/db/users.db")
 DataMapper.auto_upgrade!
 use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
@@ -49,6 +50,14 @@ use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
 
 # because we crawl an https page :
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+
+configure :development do
+  set :public, File.dirname(__FILE__) + '/public'
+end
+configure :production do
+  set :public, File.dirname(__FILE__) + '/public/public'
+end
+
 
 # ---------------Actions : -----------------
 get '/' do
