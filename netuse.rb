@@ -54,10 +54,6 @@ OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 configure :development do
   set :public, File.dirname(__FILE__) + '/public'
 end
-configure :production do
-  set :public, File.dirname(__FILE__) + '/public/public'
-end
-
 
 # ---------------Actions : -----------------
 get '/' do
