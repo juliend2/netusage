@@ -13,7 +13,7 @@
     #   issent_busteddownload,
     #   issent_nearupload,
     #   issent_busteddownload
-  -faire un cron-job pour appeller l'action /cronjob/:code (en dev et en prod) a chaque 6 am
+  # -faire un cron-job pour appeller l'action /cronjob/:code (en dev et en prod) a chaque 6 am
   # -pour les liens dans les fichiers erb, faire qu'ils soient independants du nom de domaine
   
   Phase 2:
