@@ -227,7 +227,7 @@ delete '/user/:id' do
 end
 
 # function to include files in erb templates :
-def include(filename)
+def include(Dir.pwd + filename)
   all_doc = []
   File.open(filename) do |file|
     while line = file.gets
