@@ -1,4 +1,4 @@
-<%= include('views/_header.erb')%>
+<%= include("#{Dir.pwd}/views/_header.erb")%>
 <div class="log span-6">
 	<p>
 	<%if user %>
@@ -49,4 +49,4 @@
 	<script type="text/javascript" charset="utf-8">
 		// $("input[type='text']:first", document.forms[0]).focus();		
 	</script>
-<%= include('views/_footer.erb')%>
+<%= include("#{Dir.pwd}/views/_footer.erb")%>
