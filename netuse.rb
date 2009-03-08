@@ -2,21 +2,13 @@
 ###############################################################################################
   *TODO* :
 -----------------------------------------------------------------------------------------------
-  # -Faire un modele Forfait pour stocker les donnees sur les forfaits
   -Faire la validation des champs pour signup et login
-    # -valider que le nom d'utilisateur Videotron est fonctionnel
-  # -dans /cronjob/xxxx, faire que ca reset les issent a 0 si on est dans le debut de leur mois
-  # -Pour le modele User,
-    # -Ajouter un champ forfait_id
-    # -Faire des champs:
-    #   issent_neardownload,
-    #   issent_busteddownload,
-    #   issent_nearupload,
-    #   issent_busteddownload
-  # -faire un cron-job pour appeller l'action /cronjob/:code (en dev et en prod) a chaque 6 am
-  # -pour les liens dans les fichiers erb, faire qu'ils soient independants du nom de domaine
   
   Phase 2:
+  -mettre un widget Feedback pour que les gens laissent du feedback 
+  -mettre un widget ShareThis
+  -mettre des termes d'utilisation et une politique de confidentialite
+  -enregistrer toutes les donnees dans la db pour avoir un historique complet pour chaque utilisateur
   -faire un video pour expliquer le but de l'affaire, mettre ca dans l'accueil
   -fil RSS
   -Widget Netvibes
@@ -53,6 +45,10 @@ OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 configure :development do
   set :public, File.dirname(__FILE__) + '/public'
+end
+@base = ''
+configure :production do
+  @base = '../'
 end
 
 # ---------------Actions : -----------------
@@ -271,11 +267,11 @@ def getdocument(videotronid, refreshfile=false)
   # Si on ne rafraichis pas le fichier par defaut, on le lis ou on le cree :
   if not refreshfile
     # le fichier existe?
-    if File.exist?('cache/'+videotronid)
-      lastwrite = File.ctime('cache/'+videotronid)
+    if File.exist?(@base.to_s+'cache/'+videotronid)
+      lastwrite = File.ctime(@base.to_s+'cache/'+videotronid)
       # le fichier est plus ancien qu'aujourd'hui?
       if lastwrite.day >= now.day
-        document = readfile('cache/'+videotronid)
+        document = readfile(@base.to_s+'cache/'+videotronid)
       else
         document = writetofile(videotronid)
       end
@@ -304,7 +300,7 @@ end
 def writetofile(videotronid)
   url = "https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{videotronid}"
   doc = open(url) { |f| Hpricot(f) }
-  outputfile = 'cache/'+videotronid # nom du fichier a generer 
+  outputfile = @base.to_s+'cache/'+videotronid # nom du fichier a generer 
   fout = File.open(outputfile, "w")
   fout.puts doc
   fout.close
