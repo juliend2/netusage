@@ -49,7 +49,8 @@ end
 
 begin
 if Rack::Utils::production?
-  @base = Pathname(__FILE__).dirname.expand_path
+  # @base = Pathname(__FILE__).dirname.expand_path
+  get '/'
 end
 rescue
   @base = ''
