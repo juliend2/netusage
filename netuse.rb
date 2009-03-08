@@ -43,14 +43,9 @@ use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
 # because we crawl an https page :
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
-
-@base = Pathname(__FILE__).dirname.expand_path
-
 configure :development do
   set :public, File.dirname(__FILE__) + '/public'
-  @base = ''
 end
-
 
 # ---------------Actions : -----------------
 get '/' do
@@ -268,11 +263,11 @@ def getdocument(videotronid, refreshfile=false)
   # Si on ne rafraichis pas le fichier par defaut, on le lis ou on le cree :
   if not refreshfile
     # le fichier existe?
-    if File.exist?(@base.to_s+'cache/'+videotronid)
-      lastwrite = File.ctime(@base.to_s+'cache/'+videotronid)
+    if File.exist?('cache/'+videotronid)
+      lastwrite = File.ctime('cache/'+videotronid)
       # le fichier est plus ancien qu'aujourd'hui?
       if lastwrite.day >= now.day
-        document = readfile(@base.to_s+'cache/'+videotronid)
+        document = readfile('cache/'+videotronid)
       else
         document = writetofile(videotronid)
       end
@@ -301,7 +296,7 @@ end
 def writetofile(videotronid)
   url = "https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{videotronid}"
   doc = open(url) { |f| Hpricot(f) }
-  outputfile = @base.to_s+'cache/'+videotronid # nom du fichier a generer 
+  outputfile = 'cache/'+videotronid # nom du fichier a generer 
   fout = File.open(outputfile, "w")
   fout.puts doc
   fout.close
