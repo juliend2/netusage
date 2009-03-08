@@ -44,7 +44,7 @@ use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 
-@base = File.dirname(__FILE__) + '/'
+@base = File.dirname(__FILE__)
 
 configure :development do
   set :public, File.dirname(__FILE__) + '/public'
