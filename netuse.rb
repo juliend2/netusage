@@ -50,7 +50,7 @@ end
 begin
 if Rack::Utils::production?
   # @base = Pathname(__FILE__).dirname.expand_path
-  get '/'
+  FUCK THAT SHIT
 end
 rescue
   @base = ''
