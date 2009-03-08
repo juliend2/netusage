@@ -47,6 +47,13 @@ configure :development do
   set :public, File.dirname(__FILE__) + '/public'
 end
 
+begin
+if Rack::Utils::production?
+  @base = '../'
+end
+rescue
+end
+
 # ---------------Actions : -----------------
 get '/' do
   erb :index, :locals => { :forfaits => getforfaits(), :user => session[:user], :errors=>[]}
