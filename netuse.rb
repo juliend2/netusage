@@ -43,13 +43,14 @@ use Rack::Session::Cookie, :secret => 't0Uche ce d0Ux p0Ulet'
 # because we crawl an https page :
 OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
+
+@base = File.dirname(__FILE__) + '/'
+
 configure :development do
   set :public, File.dirname(__FILE__) + '/public'
+  @base = ''
 end
-@base = ''
-configure :production do
-  @base = File.dirname(__FILE__) + '/'
-end
+
 
 # ---------------Actions : -----------------
 get '/' do
