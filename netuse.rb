@@ -48,7 +48,7 @@ configure :development do
 end
 @base = ''
 configure :production do
-  @base = '../'
+  @base = File.dirname(__FILE__) + '/'
 end
 
 # ---------------Actions : -----------------
