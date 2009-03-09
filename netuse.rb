@@ -48,7 +48,7 @@ configure :development do
 end
 
 begin
-if Rack::Utils::production?
+if Rack::Utils.production?
   # @base = Pathname(__FILE__).dirname.expand_path
   test
 end
