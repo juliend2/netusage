@@ -47,9 +47,13 @@ configure :development do
   set :public, File.dirname(__FILE__) + '/public'
 end
 
-if not @base
-  @base = ''
+configure :development do
+  set :base, ''
 end
+configure :production do
+  set :base, Pathname(__FILE__).dirname.expand_path
+end
+# access through : options.base
 
 # ---------------Actions : -----------------
 get '/' do
@@ -267,11 +271,11 @@ def getdocument(videotronid, refreshfile=false)
   # Si on ne rafraichis pas le fichier par defaut, on le lis ou on le cree :
   if not refreshfile
     # le fichier existe?
-    if File.exist?(@base.to_s+'cache/'+videotronid)
-      lastwrite = File.ctime(@base.to_s+'cache/'+videotronid)
+    if File.exist?(options.base.to_s+'cache/'+videotronid)
+      lastwrite = File.ctime(options.base.to_s+'cache/'+videotronid)
       # le fichier est plus ancien qu'aujourd'hui?
       if lastwrite.day >= now.day
-        document = readfile(@base.to_s+'cache/'+videotronid)
+        document = readfile(options.base.to_s+'cache/'+videotronid)
       else
         document = writetofile(videotronid)
       end
@@ -300,7 +304,7 @@ end
 def writetofile(videotronid)
   url = "https://www.videotron.com/services/secur/ConsommationInternet.do?compteInternet=#{videotronid}"
   doc = open(url) { |f| Hpricot(f) }
-  outputfile = @base.to_s+'cache/'+videotronid # nom du fichier a generer 
+  outputfile = options.base.to_s+'cache/'+videotronid # nom du fichier a generer 
   fout = File.open(outputfile, "w")
   fout.puts doc
   fout.close
