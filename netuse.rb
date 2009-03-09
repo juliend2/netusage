@@ -51,7 +51,7 @@ configure :development do
   set :base, ''
 end
 configure :production do
-  set :base, Pathname(__FILE__).dirname.expand_path.to_s+'/../cache'
+  set :base, Pathname(__FILE__).dirname.expand_path.to_s+'/../cache/'
 end
 # access through : options.base
 
