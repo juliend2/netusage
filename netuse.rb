@@ -47,12 +47,7 @@ configure :development do
   set :public, File.dirname(__FILE__) + '/public'
 end
 
-begin
-if Rack::Utils.production?
-  # @base = Pathname(__FILE__).dirname.expand_path
-  test
-end
-rescue
+if not @base
   @base = ''
 end
 
