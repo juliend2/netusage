@@ -51,7 +51,7 @@ configure :development do
   set :base, ''
 end
 configure :production do
-  set :base, Pathname(__FILE__).dirname.expand_path
+  set :base, Pathname(__FILE__).dirname.expand_path.to_s+'/../cache'
 end
 # access through : options.base
 
@@ -122,7 +122,7 @@ end
 get '/test' do
   # test case
   # retour= writetofile('VLISKLCE')
-  erb :test, :locals=>{:valeur=>Pathname(__FILE__).dirname.expand_path.to_s+'/cache'}
+  erb :test, :locals=>{:valeur=>Pathname(__FILE__).dirname.expand_path.to_s+'/../cache'}
 end
 
 post '/getusage' do
