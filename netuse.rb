@@ -122,7 +122,7 @@ end
 get '/test' do
   # test case
   # retour= writetofile('VLISKLCE')
-  erb :test, :locals=>{:valeur=>retour}
+  erb :test, :locals=>{:valeur=>Pathname(__FILE__).dirname.expand_path.to_s+'/cache'}
 end
 
 post '/getusage' do
